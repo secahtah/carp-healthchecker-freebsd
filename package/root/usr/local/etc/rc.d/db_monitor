@@ -1,0 +1,111 @@
+#!/usr/local/bin/bash
+
+# Configuration file path
+config_file="/usr/local/etc/db_monitor.conf"
+
+# Path to the PID file for the background monitoring process
+pid_file="/var/run/db_monitor.pid"
+
+# Initialize debug mode to off
+debug_mode=0
+
+# Process debug option if present
+while getopts ":d" opt; do
+    case ${opt} in
+        d ) debug_mode=1 ;;
+        \? ) echo "Usage: $(basename $0) [-d] {start|stop|status}" >&2; exit 1 ;;
+    esac
+done
+
+# Shift off the option and option argument
+shift "$((OPTIND-1))"
+
+# Now, $1 should be 'start', 'stop', or 'status'
+action="$1"
+
+# Function to start monitoring services in the background
+start_monitoring() {
+    echo "Starting monitoring service..."
+    monitor_services &
+    pid=$!
+    echo "Monitoring service started with PID $pid"
+    echo $pid > "$pid_file"
+}
+
+monitor_services() {
+    if [ ! -f "$config_file" ]; then
+        echo "Configuration file $config_file not found. Exiting."
+        exit 1
+    fi
+    
+    while :; do
+        if [ ! -f "$config_file" ]; then
+            echo "Configuration file removed, shutting down service."
+            break
+        fi
+        while IFS=: read -r service_name script_path interval timeout; do
+            [ -z "$service_name" ] || [[ "$service_name" == \#* ]] && continue
+            if [ ! -f "$script_path" ] || [ ! -x "$script_path" ]; then
+                # Only show errors if debug mode is enabled
+                [[ "$debug_mode" -eq 1 ]] && echo "[$(date)] Error: Script for $service_name at $script_path not found or not executable." >&2
+                continue
+            fi
+
+            # Conditionally add debug flag for check scripts
+            debug_flag=""
+            if [[ "$debug_mode" -eq 1 ]]; then
+                debug_flag="-d"
+            fi
+            
+            # Log starting message only if debug mode is enabled
+            [[ "$debug_mode" -eq 1 ]] && echo "[$(date)] Starting check for $service_name"
+            timeout "$timeout" sh "$script_path" $debug_flag
+            # Log completion message only if debug mode is enabled
+            [[ "$debug_mode" -eq 1 ]] && echo "[$(date)] Completed check for $service_name"
+            sleep "$interval"
+        done < "$config_file"
+    done
+}
+
+stop_monitoring() {
+    if [ -f "$pid_file" ]; then
+        pid=$(cat "$pid_file")
+        if kill "$pid" 2> /dev/null; then
+            echo "Stopping monitoring service, PID $pid."
+            rm -f "$pid_file"
+        else
+            echo "PID file found but process $pid not running."
+        fi
+    else
+        echo "Monitoring service is not running."
+    fi
+}
+
+show_status() {
+    if [ -f "$pid_file" ]; then
+        pid=$(cat "$pid_file")
+        if kill -0 "$pid" 2> /dev/null; then
+            echo "Monitoring service is running, PID is $pid."
+        else
+            echo "PID file found but no process with PID $pid is running."
+        fi
+    else
+        echo "Monitoring service is not running."
+    fi
+}
+
+case "$action" in
+    start)
+        start_monitoring
+        ;;
+    stop)
+        stop_monitoring
+        ;;
+    status)
+        show_status
+        ;;
+    *)
+        echo "Unsupported action. Usage: $0 [-d] {start|stop|status}"
+        exit 1
+        ;;
+esac

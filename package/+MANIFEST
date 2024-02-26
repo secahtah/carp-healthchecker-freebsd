@@ -1,0 +1,18 @@
+{
+  "name": "db_monitor",
+  "version": "1.0.0",
+  "comment": "A monitoring service for databases",
+  "desc": "Provides monitoring and health checks for various database services.",
+  "categories": ["databases"],
+  "licenselogic": "single",
+  "licenses": ["BSD"],
+  "maintainer": "secahtah",
+  "www": "https://github.com/secahtah/carp-healthchecker-freebsd",
+  "prefix": "/",
+  "files": {
+    "/usr/local/etc/rc.d/db_monitor": "403a3755f29014932a75887c404f72df8f18ba6eaeefeffc51a33a2474bb5bb7",
+    "/usr/local/sbin/check_postgresql": "8fcbb8bf2592019da2ffb5c492a97a1223e92d9f12a6dc96d4bd0d49fd92546b",
+    "/usr/local/etc/db_monitor.conf": "c00031edec59c0e5af6aa9f4efa54a000afd3868c6eb0fe8ecd69d994ba7d83e"
+  }
+}
+

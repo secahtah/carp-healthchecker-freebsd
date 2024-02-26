@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Service name: postgresql
+SERVICE_NAME="postgresql"
+# PostgreSQL port
+PORT="5432"
+
+# Function to check if PostgreSQL service is running
+check_service_running() {
+    # Using 'service' command to check status and looking for "server is running"
+    service_output=$(service ${SERVICE_NAME} status)
+    echo "$service_output" | grep "server is running" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "PostgreSQL service is not running."
+        exit 1
+    fi
+}
+
+# Function to check if PostgreSQL port is open
+check_port_open() {
+    # Using 'nc' (Netcat) to check if the port is open
+    nc -z localhost ${PORT} > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "PostgreSQL port ${PORT} is not open."
+        exit 1
+    fi
+}
+
+# Perform the checks
+check_service_running
+check_port_open
+
+# If the script reaches this point, both checks passed
+echo "PostgreSQL service is running and port ${PORT} is open."

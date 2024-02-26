@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Define the log directory and config line for newsyslog.conf
+LOG_DIR="/var/log/db_monitor"
+NEWSYSLOG_CONF="/etc/newsyslog.conf"
+CONFIG_LINE="/var/log/db_monitor/*.log    db_monitor:wheel  644  7     *    @T00  J"
+
+# Check if the log rotation configuration already exists
+if ! grep -q "$CONFIG_LINE" "$NEWSYSLOG_CONF"; then
+    echo "$CONFIG_LINE" >> "$NEWSYSLOG_CONF"
+fi
+
